@@ -1517,6 +1517,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#enable-enigma-plugin-in-roundcube" class="md-nav__link">
+    Enable enigma plugin in Roundcube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#integrate-carddav-addressbooks-in-roundcube" class="md-nav__link">
     Integrate CardDAV addressbooks in Roundcube
   </a>
@@ -1608,6 +1615,13 @@
         <li class="md-nav__item">
   <a href="#enable-change-password-function-in-roundcube" class="md-nav__link">
     Enable change password function in Roundcube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enable-enigma-plugin-in-roundcube" class="md-nav__link">
+    Enable enigma plugin in Roundcube
   </a>
   
 </li>
@@ -1722,6 +1736,57 @@ Initialize the database and leave the installer.</p>
 <span class="err">$config[&#39;password_algorithm&#39;] = &#39;ssha256&#39;;</span>
 <span class="err">$config[&#39;password_algorithm_prefix&#39;] = &#39;{SSHA256}&#39;;</span>
 <span class="err">$config[&#39;password_query&#39;] = &quot;UPDATE mailbox SET password = %P WHERE username = %u&quot;;</span>
+</code></pre></div>
+
+<h3 id="enable-enigma-plugin-in-roundcube">Enable enigma plugin in Roundcube<a class="headerlink" href="#enable-enigma-plugin-in-roundcube" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Enigma plugin requires <code>proc_open</code> function in php which is disabled for security reasons.</p>
+</div>
+<div class="codehilite"><pre><span></span><code><span class="err"># remove proc_open from disabled functions in [web-worker]</span>
+<span class="err">sed -i &quot;$ s/ proc_open,//&quot; data/conf/phpfpm/php-fpm.d/pools.conf</span>
+</code></pre></div>
+
+<p>Add enigma plugin to Roundcube config file <code>data/web/rc/config/config.inc.php</code></p>
+<div class="codehilite"><pre><span></span><code><span class="cp">&lt;?php</span>
+<span class="o">...</span>
+<span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;temp_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;/tmp&#39;</span><span class="p">;</span>
+<span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;plugins&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+  <span class="s1">&#39;archive&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;managesieve&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;enigma&#39;</span>
+<span class="p">);</span>
+<span class="nv">$config</span><span class="p">[</span><span class="s1">&#39;skin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;larry&#39;</span><span class="p">;</span>
+<span class="o">...</span>
+</code></pre></div>
+
+<p>Configure path for enigma keys.</p>
+<div class="codehilite"><pre><span></span><code><span class="err"># Copy default enigma config</span>
+<span class="err">cp data/web/rc/plugins/enigma/config.inc.php.dist data/web/rc/plugins/enigma/config.inc.php</span>
+<span class="err"># Set directory for enigma key</span>
+<span class="err">sed -i &quot;/enigma_pgp_homedir/s/null/\&#39;\/enigma-keys\&#39;/&quot; data/web/rc/plugins/enigma/config.inc.php</span>
+</code></pre></div>
+
+<p>Create directory <code>data/assets/enigma-keys</code> and set correct permissions.</p>
+<div class="codehilite"><pre><span></span><code><span class="err">mkdir data/assets/enigma-keys</span>
+<span class="err"># check uid and gid number</span>
+<span class="err">docker-compose exec php-fpm-mailcow id www-data</span>
+<span class="err"># set permissions</span>
+<span class="err">chown 82:82 data/assets/enigma-keys</span>
+</code></pre></div>
+
+<p>Mount <code>data/assets/enigma-keys</code> to php-fpm-mailcow container via <code>docker-compose.override.yml</code></p>
+<div class="codehilite"><pre><span></span><code><span class="k">version</span><span class="p">:</span> <span class="s1">&#39;2.1&#39;</span>
+
+<span class="n">services</span><span class="p">:</span>
+ <span class="n">php</span><span class="o">-</span><span class="n">fpm</span><span class="o">-</span><span class="n">mailcow</span><span class="p">:</span>
+      <span class="n">volumes</span><span class="p">:</span>
+        <span class="o">-</span> <span class="p">.</span><span class="o">/</span><span class="k">data</span><span class="o">/</span><span class="n">assets</span><span class="o">/</span><span class="n">enigma</span><span class="o">-</span><span class="n">keys</span><span class="p">:</span><span class="o">/</span><span class="n">enigma</span><span class="o">-</span><span class="n">keys</span><span class="p">:</span><span class="n">rw</span>
+</code></pre></div>
+
+<p>Shutdown mailcow and start it again.</p>
+<div class="codehilite"><pre><span></span><code><span class="err">docker-compose down</span>
+<span class="err">docker-compose up -d</span>
 </code></pre></div>
 
 <h3 id="integrate-carddav-addressbooks-in-roundcube">Integrate CardDAV addressbooks in Roundcube<a class="headerlink" href="#integrate-carddav-addressbooks-in-roundcube" title="Permanent link">&para;</a></h3>
